@@ -7,7 +7,7 @@ A simple and high level library to encrypt and decrypt text, files and any data 
 add this to Cargo.toml:
 
 ```toml
-simple-crypt = "0.1.4"
+simple_crypt = "0.1.4"
 ```
 
 ## Examples
