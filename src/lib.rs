@@ -4,17 +4,30 @@
 //!
 //! For security it uses aes-gcm-siv-256 and argon2
 //!
-//! # Examples
+//! ## Usage
 //!
-//! Encrypting
+//! add this to Cargo.toml:
+//!
+//! ```toml
+//! simple-crypt = "0.1.4"
 //! ```
+//!
+//! ## Examples
+//!
+//! ```rusr
+//! // Encrypting
+//!
+//! use simple_crypt::encrypt;
 //! let encrypted_data = encrypt(b"example text", "example passowrd").expect("Failed to encrypt");
-//! ```
 //!
-//! Decrypting
-//! ```
+//! // Decrypting
+//!
+//! use simple_crypt::decrypt;
 //! let data = decrypt(&encrypted_data, "example passowrd").expect("Failed to decrypt");
 //! ```
+//!
+//! [Documentation](https://docs.rs/simple-crypt)
+//! [Repository](https://github.com/NiiightmareXD/simple_crypt)
 //!
 
 use aes_gcm_siv::{
@@ -37,8 +50,9 @@ struct PrecryptorFile {
 ///
 /// # Examples
 ///
-/// Encrypt
-/// ```
+/// ```rust
+/// use simple_crypt::encrypt;
+///
 /// let encrypted_data = encrypt(b"example text", "example passowrd").expect("Failed to encrypt");
 /// // and now you can write it to a file:
 /// // fs::write("test.enc", encrypted_data).expect("Failed to write to file");
@@ -87,7 +101,11 @@ pub fn encrypt(data: &[u8], password: &str) -> Result<Vec<u8>> {
 ///
 /// # Examples
 ///
-/// ```
+/// ```rust
+/// use simple_crypt::{encrypt, decrypt};
+///
+/// let encrypted_data = encrypt(b"example text", "example passowrd").expect("Failed to encrypt");
+///
 /// let data = decrypt(&encrypted_data, "example passowrd").expect("Failed to decrypt");
 /// // and now you can print it to stdout:
 /// // println!("data: {}", String::from_utf8(data.clone()).expect("Data is not a utf8 string"));
@@ -124,7 +142,9 @@ pub fn decrypt(data: &[u8], password: &str) -> Result<Vec<u8>> {
 
 #[cfg(test)]
 mod tests {
-    use simple_crypt::{decrypt, encrypt};
+    use std::fs;
+
+    use super::*;
 
     #[test]
     fn it_works() {
