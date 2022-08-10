@@ -9,7 +9,7 @@
 //! add this to Cargo.toml:
 //!
 //! ```toml
-//! simple_crypt = "0.1.4"
+//! simple_crypt = "*"
 //! ```
 //!
 //! ## Examples
