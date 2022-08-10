@@ -18,7 +18,7 @@ struct PrecryptorFile {
     salt: [u8; 32],
 }
 
-pub fn encrypt(data: Vec<u8>, password: &str) -> Result<Vec<u8>> {
+pub fn encrypt(data: &mut [u8], password: &str) -> Result<Vec<u8>> {
     trace!("Generating salt");
     let mut salt = [0u8; 32];
     OsRng.fill_bytes(&mut salt);
@@ -57,7 +57,7 @@ pub fn encrypt(data: Vec<u8>, password: &str) -> Result<Vec<u8>> {
     Ok(encoded)
 }
 
-pub fn decrypt(data: Vec<u8>, password: &str) -> Result<Vec<u8>> {
+pub fn decrypt(data: &mut [u8], password: &str) -> Result<Vec<u8>> {
     trace!("Decoding");
     let decoded: PrecryptorFile =
         bincode::deserialize(&data[..]).with_context(|| "Failed to decode data")?;
