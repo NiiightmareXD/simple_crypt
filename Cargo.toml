@@ -7,7 +7,7 @@ license = "MIT"
 readme = "README.md"
 description = "A simple and high level library to encrypt and decrypt text, files and any data with it"
 documentation = "https://docs.rs/simple-crypt"
-repository = "https://github.com/NiiightmareXD/simple-crypt"
+repository = "https://github.com/NiiightmareXD/simple_crypt"
 keywords = ["crypto", "encryption", "aes", "aes-gcm-siv", "cypher"]
 categories = ["cryptography"]
 
