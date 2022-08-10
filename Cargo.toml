@@ -9,7 +9,7 @@ description = "A simple and high level library to encrypt and decrypt text, file
 documentation = "https://docs.rs/simple-crypt"
 repository = "https://github.com/NiiightmareXD/simple-crypt"
 keywords = ["crypto", "encryption", "aes", "aes-gcm-siv", "cypher"]
-categories = ["Cryptography"]
+categories = ["cryptography"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
