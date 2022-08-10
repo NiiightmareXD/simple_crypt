@@ -1,6 +1,6 @@
 //! # Simple Crypt
 //!
-//! `simple-crypt` is a high level library to encrypt and decrypt data
+//! `simple_crypt` is a high level library to encrypt and decrypt data
 //!
 //! For security it uses aes-gcm-siv-256 and argon2
 //!
