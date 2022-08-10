@@ -1,4 +1,4 @@
-# simple-crypt
+# Simple Crypt
 
 A simple and high level rust library to encrypt and decrypt text, files and any data with it
 
