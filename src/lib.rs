@@ -142,8 +142,6 @@ pub fn decrypt(data: &[u8], password: &str) -> Result<Vec<u8>> {
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
-
     use super::*;
 
     #[test]
