@@ -124,7 +124,7 @@ pub fn decrypt(data: &[u8], password: &str) -> Result<Vec<u8>> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use simple_crypt::{decrypt, encrypt};
 
     #[test]
     fn it_works() {
