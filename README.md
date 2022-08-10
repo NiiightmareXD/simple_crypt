@@ -1,6 +1,6 @@
 # simple-crypt
 
-A simple and high level library to encrypt and decrypt text, files and any data with it
+A simple and high level rust library to encrypt and decrypt text, files and any data with it
 
 ## Usage
 
