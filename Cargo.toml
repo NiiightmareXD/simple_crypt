@@ -1,12 +1,12 @@
 [package]
 name = "simple_crypt"
-version = "0.1.5"
+version = "0.1.6"
 authors = ["NiiightmareXD <https://github.com/NiiightmareXD"]
 edition = "2021"
 license = "MIT"
 readme = "README.md"
 description = "A simple and high level library to encrypt and decrypt text, files and any data with it"
-documentation = "https://docs.rs/simple-crypt"
+documentation = "https://docs.rs/simple_crypt"
 repository = "https://github.com/NiiightmareXD/simple_crypt"
 keywords = ["crypto", "encryption", "aes", "aes-gcm-siv", "cypher"]
 categories = ["cryptography"]
