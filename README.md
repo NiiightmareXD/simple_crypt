@@ -2,6 +2,8 @@
 
 A simple and high level rust library to encrypt and decrypt text, files and any data with it
 
+For encryption it uses [AES-GCM-SIV-256](https://en.wikipedia.org/wiki/AES-GCM-SIV) and [Argon2](https://en.wikipedia.org/wiki/Argon2)
+
 ## Usage
 
 add this to Cargo.toml:

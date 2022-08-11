@@ -2,7 +2,7 @@
 //!
 //! `simple_crypt` is a high level library to encrypt and decrypt data
 //!
-//! For security it uses aes-gcm-siv-256 and argon2
+//! For encryption it uses [AES-GCM-SIV-256](https://en.wikipedia.org/wiki/AES-GCM-SIV) and [Argon2](https://en.wikipedia.org/wiki/Argon2)
 //!
 //! ## Usage
 //!
@@ -14,7 +14,7 @@
 //!
 //! ## Examples
 //!
-//! ```rusr
+//! ```
 //! // Encrypting
 //!
 //! use simple_crypt::encrypt;
