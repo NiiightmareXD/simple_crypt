@@ -15,13 +15,13 @@ simple_crypt = "*"
 Encrypting
 
 ```rust
-let encrypted_data = encrypt(b"example text", "example passowrd").expect("Failed to encrypt");
+let encrypted_data = encrypt(b"example text", b"example passowrd").expect("Failed to encrypt");
 ```
 
 Decrypting
 
 ```rust
-let data = decrypt(&encrypted_data, "example passowrd").expect("Failed to decrypt");
+let data = decrypt(&encrypted_data, b"example passowrd").expect("Failed to decrypt");
 ```
 
 Go to [Documentation](https://docs.rs/simple-crypt) | [Repository](https://github.com/NiiightmareXD/simple_crypt)
