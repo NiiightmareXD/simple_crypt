@@ -53,12 +53,12 @@ struct PrecryptorFile {
 /// ```rust
 /// use simple_crypt::encrypt;
 ///
-/// let encrypted_data = encrypt(b"example text", "example passowrd").expect("Failed to encrypt");
+/// let encrypted_data = encrypt(b"example text", b"example passowrd").expect("Failed to encrypt");
 /// // and now you can write it to a file:
 /// // fs::write("test.enc", encrypted_data).expect("Failed to write to file");
 /// ```
 ///
-pub fn encrypt(data: &[u8], password: &str) -> Result<Vec<u8>> {
+pub fn encrypt(data: &[u8], password: &[u8]) -> Result<Vec<u8>> {
     trace!("Generating salt");
     let mut salt = [0u8; 32];
     OsRng.fill_bytes(&mut salt);
@@ -68,7 +68,7 @@ pub fn encrypt(data: &[u8], password: &str) -> Result<Vec<u8>> {
     };
 
     trace!("Generating key");
-    let password = argon2::hash_raw(password.as_bytes(), &salt, &config)
+    let password = argon2::hash_raw(password, &salt, &config)
         .with_context(|| "Failed to generate key from password")?;
 
     let key = GenericArray::from_slice(&password);
@@ -104,16 +104,16 @@ pub fn encrypt(data: &[u8], password: &str) -> Result<Vec<u8>> {
 /// ```rust
 /// use simple_crypt::{encrypt, decrypt};
 ///
-/// let encrypted_data = encrypt(b"example text", "example passowrd").expect("Failed to encrypt");
+/// let encrypted_data = encrypt(b"example text", b"example passowrd").expect("Failed to encrypt");
 ///
-/// let data = decrypt(&encrypted_data, "example passowrd").expect("Failed to decrypt");
+/// let data = decrypt(&encrypted_data, b"example passowrd").expect("Failed to decrypt");
 /// // and now you can print it to stdout:
 /// // println!("data: {}", String::from_utf8(data.clone()).expect("Data is not a utf8 string"));
 /// // or you can write it to a file:
 /// // fs::write("test.txt", data).expect("Failed to write to file");
 /// ```
 ///
-pub fn decrypt(data: &[u8], password: &str) -> Result<Vec<u8>> {
+pub fn decrypt(data: &[u8], password: &[u8]) -> Result<Vec<u8>> {
     trace!("Decoding");
     let decoded: PrecryptorFile =
         bincode::deserialize(data).with_context(|| "Failed to decode data")?;
@@ -124,7 +124,7 @@ pub fn decrypt(data: &[u8], password: &str) -> Result<Vec<u8>> {
     };
 
     trace!("Generating key");
-    let password = argon2::hash_raw(password.as_bytes(), &decoded.salt, &config)
+    let password = argon2::hash_raw(password, &decoded.salt, &config)
         .with_context(|| "Failed to generate key from password")?;
 
     let key = GenericArray::from_slice(&password);
@@ -147,8 +147,8 @@ mod tests {
     #[test]
     fn it_works() {
         let encrypted_data =
-            encrypt(b"example text", "example passowrd").expect("Failed to encrypt");
-        let data = decrypt(&encrypted_data, "example passowrd").expect("Failed to decrypt");
+            encrypt(b"example text", b"example passowrd").expect("Failed to encrypt");
+        let data = decrypt(&encrypted_data, b"example passowrd").expect("Failed to decrypt");
         assert_eq!(data, b"example text");
     }
 }
