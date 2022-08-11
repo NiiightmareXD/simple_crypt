@@ -1,6 +1,6 @@
 [package]
 name = "simple_crypt"
-version = "0.1.8"
+version = "0.1.9"
 authors = ["NiiightmareXD <https://github.com/NiiightmareXD"]
 edition = "2021"
 license = "MIT"
