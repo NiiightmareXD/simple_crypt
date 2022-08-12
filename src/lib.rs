@@ -148,10 +148,10 @@ pub fn decrypt(data: &[u8], password: &[u8]) -> Result<Vec<u8>> {
 ///
 /// # Examples
 ///
-/// ```rust
+/// ```no_run
 /// use simple_crypt::encrypt_file;
 ///
-/// encrypt_file("example.txt", "encrypted_example.txt", b"example passwprd").expect("Failed to encrypt file");
+/// encrypt_file("example.txt", "encrypted_example.txt", b"example passwprd").expect("Failed to encrypt the file");
 /// // Now the encrypted_example.txt is encrypted
 /// ```
 ///
@@ -166,16 +166,16 @@ pub fn encrypt_file(path: &str, output_path: &str, password: &[u8]) -> Result<()
 ///
 /// # Examples
 ///
-/// ```rust
+/// ```no_run
 /// use simple_crypt::decrypt_file;
 ///
-/// decrypt_file("encrypted_example.txt", "example.txt", b"example passwprd").expect("Failed to decrypt file");
+/// decrypt_file("encrypted_example.txt", "example.txt", b"example passwprd").expect("Failed to decrypt the file");
 /// // Now the example.txt is decrypted
 /// ```
 ///
 pub fn decrypt_file(path: &str, output_path: &str, password: &[u8]) -> Result<()> {
     let encrypted_data = fs::read(path).with_context(|| "Failed to read the file")?;
-    let data = decrypt(&encrypted_data, password).with_context(|| "Failed to encrypt data")?;
+    let data = decrypt(&encrypted_data, password).with_context(|| "Failed to decrypt data")?;
     fs::write(output_path, data).with_context(|| "Failed to write to file")?;
     Ok(())
 }
@@ -193,10 +193,12 @@ mod tests {
 
     #[test]
     fn files() {
-        encrypt_file("test.txt", "test.txt", b"test").expect("Failed to encrypt file");
-        decrypt_file("test.txt", "test.txt", b"test").expect("Failed to encrypt file");
+        fs::write("test.txt", "test").expect("Failed to write to file");
+        encrypt_file("test.txt", "test.txt", b"test").expect("Failed to encrypt the file");
+        decrypt_file("test.txt", "test.txt", b"test").expect("Failed to decrypt the file");
         let data = fs::read("test.txt").expect("Failed to read file");
         assert_eq!(data, b"test");
+        fs::remove_file("test.txt").expect("Failed to remove the test file");
     }
 
     #[test]
