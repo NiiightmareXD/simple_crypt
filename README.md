@@ -26,4 +26,6 @@ Decrypting
 let data = decrypt(&encrypted_data, b"example passowrd").expect("Failed to decrypt");
 ```
 
+And there are other functions to encrypt files or folders see the [documentation](https://docs.rs/simple-crypt)
+
 Go to [Documentation](https://docs.rs/simple-crypt) | [Repository](https://github.com/NiiightmareXD/simple_crypt)
