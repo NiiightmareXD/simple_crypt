@@ -248,7 +248,7 @@ pub fn encrypt_directory(path: &Path, output_path: &Path, password: &[u8]) -> Re
 /// use simple_crypt::decrypt_directory;
 /// use std::path::Path;
 ///
-/// decrypt_directory(Path::new("test.dir"), Path::new("test"), b"test").expect("Failed to decrypt directory");
+/// decrypt_directory(Path::new("example.dir"), Path::new("example"), b"example password").expect("Failed to decrypt directory");
 /// // Now the example.txt is decrypted
 /// ```
 ///
