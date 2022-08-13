@@ -1,0 +1,9 @@
+{
+    "grammarly.selectors": [
+        {
+            "language": "rust",
+            "scheme": "file",
+            "pattern": "src/lib.rs"
+        }
+    ]
+}
