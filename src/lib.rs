@@ -37,12 +37,12 @@ use std::{
     path::Path,
 };
 
-use aes_gcm_siv::{
-    aead::{generic_array::GenericArray, rand_core::RngCore, Aead, OsRng},
-    Aes256GcmSiv, KeyInit, Nonce,
-};
 use anyhow::{anyhow, Context, Result};
 use argon2::Config;
+use chacha20poly1305::{
+    aead::{generic_array::GenericArray, rand_core::RngCore, Aead, OsRng},
+    AeadCore, ChaCha20Poly1305, KeyInit, Nonce,
+};
 use log::{info, trace};
 use serde_derive::{Deserialize, Serialize};
 use tar::{Archive, Builder};
@@ -78,24 +78,21 @@ pub fn encrypt(data: &[u8], password: &[u8]) -> Result<Vec<u8>> {
     trace!("Generating key");
     let password = argon2::hash_raw(password, &salt, &config)
         .with_context(|| "Failed to generate key from password")?;
-
     let key = GenericArray::from_slice(&password);
-    let cipher = Aes256GcmSiv::new(key);
+    let cipher = ChaCha20Poly1305::new(&key);
 
     trace!("Generating nonce");
-    let mut nonce_rand = [0u8; 12];
-    OsRng.fill_bytes(&mut nonce_rand);
-    let nonce = Nonce::from_slice(&nonce_rand);
+    let nonce = ChaCha20Poly1305::generate_nonce(OsRng);
 
     info!("Encrypting");
-    let ciphertext = match cipher.encrypt(nonce, data.as_ref()) {
+    let ciphertext = match cipher.encrypt(&nonce, data.as_ref()) {
         Ok(ciphertext) => ciphertext,
         Err(_) => return Err(anyhow!("Failed to encrypt data -> invalid password")),
     };
 
     let file = PrecryptorFile {
         data: ciphertext,
-        nonce: nonce_rand,
+        nonce: nonce.into(),
         salt,
     };
 
@@ -136,11 +133,11 @@ pub fn decrypt(data: &[u8], password: &[u8]) -> Result<Vec<u8>> {
         .with_context(|| "Failed to generate key from password")?;
 
     let key = GenericArray::from_slice(&password);
-    let cipher = Aes256GcmSiv::new(key);
+    let cipher = ChaCha20Poly1305::new(&key);
     let nonce = Nonce::from_slice(&decoded.nonce);
 
     info!("Decrypting");
-    let text = match cipher.decrypt(nonce, decoded.data.as_ref()) {
+    let text = match cipher.decrypt(&nonce, decoded.data.as_ref()) {
         Ok(ciphertext) => ciphertext,
         Err(_) => return Err(anyhow!("Failed to encrypt data -> invalid password")),
     };
