@@ -8,7 +8,7 @@ readme = "README.md"
 description = "A simple and high level library to encrypt and decrypt texts, files, folders and any data with it"
 documentation = "https://docs.rs/simple_crypt"
 repository = "https://github.com/NiiightmareXD/simple_crypt"
-keywords = ["crypto", "encryption", "aes", "argon2", "cypher"]
+keywords = ["crypto", "encryption", "chacha20", "poly1305", "argon2", "cypher"]
 categories = ["cryptography"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
