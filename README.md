@@ -1,7 +1,7 @@
 # Simple Crypt
 
 A simple and high-level rust library to encrypt and decrypt texts, files, folders and any data with it
-For encryption, it uses [AES-GCM-SIV-256](https://en.wikipedia.org/wiki/AES-GCM-SIV) and [Argon2](https://en.wikipedia.org/wiki/Argon2)
+For encryption, it uses [ChaCha20-Poly1305](https://en.wikipedia.org/wiki/ChaCha20-Poly1305) and [Argon2](https://en.wikipedia.org/wiki/Argon2)
 
 ## Usage
 
