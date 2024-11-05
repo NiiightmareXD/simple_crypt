@@ -5,11 +5,7 @@ For encryption, it uses [ChaCha20-Poly1305](https://en.wikipedia.org/wiki/ChaCha
 
 ## Usage
 
-add this to Cargo.toml:
-
-```toml
-simple_crypt = "*"
-```
+add this package to your Cargo.toml by running: `cargo add simple_crypt`
 
 ## Examples
 
