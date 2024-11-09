@@ -32,12 +32,8 @@
 //! [Repository](https://github.com/NiiightmareXD/simple_crypt)
 //!
 
-use std::{
-    fs::{self, File},
-    path::Path,
-};
+use std::{fs, io, path::Path};
 
-use anyhow::{anyhow, Context, Result};
 use argon2::Config;
 use chacha20poly1305::{
     aead::{generic_array::GenericArray, rand_core::RngCore, Aead, OsRng},
@@ -46,6 +42,7 @@ use chacha20poly1305::{
 use log::{info, trace};
 use serde_derive::{Deserialize, Serialize};
 use tar::{Archive, Builder};
+use thiserror::Error;
 
 #[derive(Serialize, Deserialize)]
 struct PrecryptorFile {
@@ -53,7 +50,15 @@ struct PrecryptorFile {
     nonce: [u8; 12],
     salt: [u8; 32],
 }
-
+#[derive(Error, Debug)]
+pub enum EncryptError {
+    #[error("failed to generate key from password")]
+    Hashing(argon2::Error),
+    #[error("error running chacha20poly1305 on data")]
+    Cipher(chacha20poly1305::Error),
+    #[error("error serializing data to binary format")]
+    Serialize(bincode::Error),
+}
 /// Encrypts some data and returns the result
 ///
 /// # Examples
@@ -66,7 +71,7 @@ struct PrecryptorFile {
 /// // fs::write("encrypted_text.txt", encrypted_data).expect("Failed to write to file");
 /// ```
 ///
-pub fn encrypt(data: &[u8], password: &[u8]) -> Result<Vec<u8>> {
+pub fn encrypt(data: &[u8], password: &[u8]) -> Result<Vec<u8>, EncryptError> {
     trace!("Generating salt");
     let mut salt = [0u8; 32];
     OsRng.fill_bytes(&mut salt);
@@ -76,20 +81,17 @@ pub fn encrypt(data: &[u8], password: &[u8]) -> Result<Vec<u8>> {
     };
 
     trace!("Generating key");
-    let password = argon2::hash_raw(password, &salt, &config)
-        .with_context(|| "Failed to generate key from password")?;
+    let password = argon2::hash_raw(password, &salt, &config).map_err(EncryptError::Hashing)?;
     let key = GenericArray::from_slice(&password);
-    let cipher = ChaCha20Poly1305::new(&key);
+    let cipher = ChaCha20Poly1305::new(key);
 
     trace!("Generating nonce");
     let nonce = ChaCha20Poly1305::generate_nonce(OsRng);
 
     info!("Encrypting");
-    let ciphertext = match cipher.encrypt(&nonce, data.as_ref()) {
-        Ok(ciphertext) => ciphertext,
-        Err(_) => return Err(anyhow!("Failed to encrypt data -> invalid password")),
-    };
-
+    let ciphertext = cipher
+        .encrypt(&nonce, data.as_ref())
+        .map_err(EncryptError::Cipher)?;
     let file = PrecryptorFile {
         data: ciphertext,
         nonce: nonce.into(),
@@ -97,11 +99,19 @@ pub fn encrypt(data: &[u8], password: &[u8]) -> Result<Vec<u8>> {
     };
 
     trace!("Encoding");
-    let encoded: Vec<u8> = bincode::serialize(&file).with_context(|| "Failed to decode data")?;
+    let encoded: Vec<u8> = bincode::serialize(&file).map_err(EncryptError::Serialize)?;
 
     Ok(encoded)
 }
-
+#[derive(Error, Debug)]
+pub enum DecryptError {
+    #[error("failed to generate decryption key from password")]
+    Hashing(argon2::Error),
+    #[error("failed to deserialize encrypted file from binary format")]
+    Deserialize(bincode::Error),
+    #[error("error decrypting with chacha20poly1305 (possibly invalid password)")]
+    Cipher(chacha20poly1305::Error),
+}
 /// Decrypts some data and returns the result
 ///
 /// # Examples
@@ -118,10 +128,9 @@ pub fn encrypt(data: &[u8], password: &[u8]) -> Result<Vec<u8>> {
 /// // fs::write("text.txt", data).expect("Failed to write to file");
 /// ```
 ///
-pub fn decrypt(data: &[u8], password: &[u8]) -> Result<Vec<u8>> {
+pub fn decrypt(data: &[u8], password: &[u8]) -> Result<Vec<u8>, DecryptError> {
     trace!("Decoding");
-    let decoded: PrecryptorFile =
-        bincode::deserialize(data).with_context(|| "Failed to decode data")?;
+    let decoded: PrecryptorFile = bincode::deserialize(data).map_err(DecryptError::Deserialize)?;
 
     let config = Config {
         hash_length: 32,
@@ -129,22 +138,26 @@ pub fn decrypt(data: &[u8], password: &[u8]) -> Result<Vec<u8>> {
     };
 
     trace!("Generating key");
-    let password = argon2::hash_raw(password, &decoded.salt, &config)
-        .with_context(|| "Failed to generate key from password")?;
+    let password =
+        argon2::hash_raw(password, &decoded.salt, &config).map_err(DecryptError::Hashing)?;
 
     let key = GenericArray::from_slice(&password);
-    let cipher = ChaCha20Poly1305::new(&key);
+    let cipher = ChaCha20Poly1305::new(key);
     let nonce = Nonce::from_slice(&decoded.nonce);
 
     info!("Decrypting");
-    let text = match cipher.decrypt(&nonce, decoded.data.as_ref()) {
-        Ok(ciphertext) => ciphertext,
-        Err(_) => return Err(anyhow!("Failed to encrypt data -> invalid password")),
-    };
-
+    let text = cipher
+        .decrypt(nonce, decoded.data.as_ref())
+        .map_err(DecryptError::Cipher)?;
     Ok(text)
 }
-
+#[derive(Error, Debug)]
+pub enum FsEncryptError {
+    #[error("error writing data to file system")]
+    Fs(io::Error),
+    #[error("error encrypting file contents")]
+    Encrypt(EncryptError),
+}
 /// Encrypts file data and outputs it to the specified output file
 ///
 /// # Examples
@@ -157,12 +170,16 @@ pub fn decrypt(data: &[u8], password: &[u8]) -> Result<Vec<u8>> {
 /// // Now the encrypted_example.txt is encrypted
 /// ```
 ///
-pub fn encrypt_file(path: &Path, output_path: &Path, password: &[u8]) -> Result<()> {
+pub fn encrypt_file(
+    path: &Path,
+    output_path: &Path,
+    password: &[u8],
+) -> Result<(), FsEncryptError> {
     trace!("Reading file");
-    let data = fs::read(path).with_context(|| "Failed to read the file")?;
-    let encrypted_data = encrypt(&data, password).with_context(|| "Failed to encrypt data")?;
+    let data = fs::read(path).map_err(FsEncryptError::Fs)?;
+    let encrypted_data = encrypt(&data, password).map_err(FsEncryptError::Encrypt)?;
     trace!("Writing to file");
-    fs::write(output_path, encrypted_data).with_context(|| "Failed to write to file")?;
+    fs::write(output_path, encrypted_data).map_err(FsEncryptError::Fs)?;
     Ok(())
 }
 
@@ -178,15 +195,36 @@ pub fn encrypt_file(path: &Path, output_path: &Path, password: &[u8]) -> Result<
 /// // Now the example.txt is decrypted
 /// ```
 ///
-pub fn decrypt_file(path: &Path, output_path: &Path, password: &[u8]) -> Result<()> {
+#[derive(Error, Debug)]
+pub enum FsDecryptError {
+    #[error("error writing encrypted data to file system")]
+    Fs(io::Error),
+    #[error("error decrypting file contents")]
+    Decrypt(DecryptError),
+}
+pub fn decrypt_file(
+    path: &Path,
+    output_path: &Path,
+    password: &[u8],
+) -> Result<(), FsDecryptError> {
     trace!("Reading file");
-    let encrypted_data = fs::read(path).with_context(|| "Failed to read the file")?;
-    let data = decrypt(&encrypted_data, password).with_context(|| "Failed to decrypt data")?;
+    let encrypted_data = fs::read(path).map_err(FsDecryptError::Fs)?;
+    let data = decrypt(&encrypted_data, password).map_err(FsDecryptError::Decrypt)?;
     trace!("Writing to file");
-    fs::write(output_path, data).with_context(|| "Failed to write to file")?;
+    fs::write(output_path, data).map_err(FsDecryptError::Fs)?;
     Ok(())
 }
-
+#[derive(Error, Debug)]
+pub enum EncryptDirectoryError {
+    #[error("error creating archive to encrypt")]
+    Archive(io::Error),
+    #[error("no filename found for path")]
+    NoFilename,
+    #[error("error encrypting archive contents")]
+    Encrypt(EncryptError),
+    #[error("error writing encrypted archive to file")]
+    Fs(io::Error),
+}
 /// Encrypts a directory and outputs it to the specified output file
 ///
 /// note: the output is a file but when you decrypt it, it will be a directory again it's simply an encrypted tar file
@@ -201,40 +239,39 @@ pub fn decrypt_file(path: &Path, output_path: &Path, password: &[u8]) -> Result<
 /// // Now the example.dir is encrypted
 /// ```
 ///
-pub fn encrypt_directory(path: &Path, output_path: &Path, password: &[u8]) -> Result<()> {
-    trace!("Creating temporarily file");
-    let file = File::create(format!("{}.tmp", output_path.display()))
-        .with_context(|| "Failed to create file")?;
-    let mut archive = Builder::new(file);
+pub fn encrypt_directory(
+    path: &Path,
+    output_path: &Path,
+    password: &[u8],
+) -> Result<(), EncryptDirectoryError> {
+    let mut archive_output = Vec::new();
+    let mut archive = Builder::new(&mut archive_output);
 
     trace!("Adding folder to file");
     archive
         .append_dir_all(
-            path.file_name().with_context(|| "Failed to get filename")?,
+            path.file_name().ok_or(EncryptDirectoryError::NoFilename)?,
             path,
         )
-        .with_context(|| "Failed to add the folder to the file")?;
+        .map_err(EncryptDirectoryError::Archive)?;
 
-    trace!("Finishing writing to file");
-    archive
-        .finish()
-        .with_context(|| "Failed to finish writing the archive")?;
-
-    trace!("Reading from temporarily file");
-    let data = fs::read(format!("{}.tmp", output_path.display()))
-        .with_context(|| "Failed to read the file")?;
-
-    trace!("Removing temporarily file");
-    fs::remove_file(format!("{}.tmp", output_path.display()))
-        .with_context(|| "Failed to remove the temporarily file")?;
-
-    let encrypted_data = encrypt(&data, password).with_context(|| "Failed to encrypt data")?;
-
+    let data = archive
+        .into_inner()
+        .map_err(EncryptDirectoryError::Archive)?;
+    let encrypted_data = encrypt(data, password).map_err(EncryptDirectoryError::Encrypt)?;
     trace!("Writing to file");
-    fs::write(output_path, encrypted_data).with_context(|| "Failed to write to file")?;
+    fs::write(output_path, encrypted_data).map_err(EncryptDirectoryError::Fs)?;
     Ok(())
 }
-
+#[derive(Error, Debug)]
+pub enum DecryptDirectoryError {
+    #[error("error reading encrypted data")]
+    Fs(io::Error),
+    #[error("error decrypting archive")]
+    Decrypt(DecryptError),
+    #[error("error unpacking archive")]
+    Archive(io::Error),
+}
 /// Decrypts a directory and extracts it to the specified output directory
 ///
 /// note: the encrypted directory is a file but when its decrypted it will be a directory and the output path is not what the folder name should be its where to extract the file
@@ -249,28 +286,22 @@ pub fn encrypt_directory(path: &Path, output_path: &Path, password: &[u8]) -> Re
 /// // Now the example.txt is decrypted
 /// ```
 ///
-pub fn decrypt_directory(path: &Path, output_path: &Path, password: &[u8]) -> Result<()> {
+pub fn decrypt_directory(
+    path: &Path,
+    output_path: &Path,
+    password: &[u8],
+) -> Result<(), DecryptDirectoryError> {
     trace!("Reading from file");
-    let encrypted_data = fs::read(path).with_context(|| "Failed to read the file")?;
-    let data = decrypt(&encrypted_data, password).with_context(|| "Failed to decrypt data")?;
+    let encrypted_data = fs::read(path).map_err(DecryptDirectoryError::Fs)?;
+    let data = decrypt(&encrypted_data, password).map_err(DecryptDirectoryError::Decrypt)?;
 
-    trace!("Writing to temporarily file");
-    fs::write(format!("{}.tmp", output_path.display()), data)
-        .with_context(|| "Failed to write to file")?;
-
-    trace!("Opening file");
-    let file = File::open(format!("{}.tmp", output_path.display()))
-        .with_context(|| "Failed to open file")?;
-    let mut archive = Archive::new(file);
+    let mut archive: Archive<&[u8]> = Archive::new(data.as_ref());
 
     trace!("Extracting file");
     archive
         .unpack(output_path)
-        .with_context(|| "Failed to extract directory from file")?;
+        .map_err(DecryptDirectoryError::Archive)?;
 
-    trace!("Removing temporarily file");
-    fs::remove_file(format!("{}.tmp", output_path.display()))
-        .with_context(|| "Failed to remove the temporarily file")?;
     Ok(())
 }
 
