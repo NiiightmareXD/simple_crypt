@@ -56,7 +56,7 @@ pub enum EncryptError {
     Hashing(argon2::Error),
     #[error("error running chacha20poly1305 on data")]
     Cipher(chacha20poly1305::Error),
-    #[error("error serializing data to binary format")]
+    #[error("error serializing data to binary format: {0}")]
     Serialize(bincode::Error),
 }
 /// Encrypts some data and returns the result
@@ -153,9 +153,9 @@ pub fn decrypt(data: &[u8], password: &[u8]) -> Result<Vec<u8>, DecryptError> {
 }
 #[derive(Error, Debug)]
 pub enum FsEncryptError {
-    #[error("error writing data to file system")]
+    #[error("error writing data to file system: {0}")]
     Fs(io::Error),
-    #[error("error encrypting file contents")]
+    #[error("error encrypting file contents: {0}")]
     Encrypt(EncryptError),
 }
 /// Encrypts file data and outputs it to the specified output file
@@ -216,13 +216,13 @@ pub fn decrypt_file(
 }
 #[derive(Error, Debug)]
 pub enum EncryptDirectoryError {
-    #[error("error creating archive to encrypt")]
+    #[error("error creating archive to encrypt: {0}")]
     Archive(io::Error),
     #[error("no filename found for path")]
     NoFilename,
-    #[error("error encrypting archive contents")]
+    #[error("error encrypting archive contents: {0}")]
     Encrypt(EncryptError),
-    #[error("error writing encrypted archive to file")]
+    #[error("error writing encrypted archive to file: {0}")]
     Fs(io::Error),
 }
 /// Encrypts a directory and outputs it to the specified output file
@@ -265,11 +265,11 @@ pub fn encrypt_directory(
 }
 #[derive(Error, Debug)]
 pub enum DecryptDirectoryError {
-    #[error("error reading encrypted data")]
+    #[error("error reading encrypted data from filesystem: {0}")]
     Fs(io::Error),
-    #[error("error decrypting archive")]
+    #[error("error decrypting archive: {0}")]
     Decrypt(DecryptError),
-    #[error("error unpacking archive")]
+    #[error("error unpacking archive: {0}")]
     Archive(io::Error),
 }
 /// Decrypts a directory and extracts it to the specified output directory
