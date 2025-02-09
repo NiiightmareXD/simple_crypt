@@ -88,7 +88,7 @@ pub fn encrypt(data: &[u8], password: &[u8]) -> Result<Vec<u8>, EncryptError> {
     trace!("Generating nonce");
     let nonce = ChaCha20Poly1305::generate_nonce(OsRng);
 
-    info!("Encrypting");
+    trace!("Encrypting");
     let ciphertext = cipher
         .encrypt(&nonce, data.as_ref())
         .map_err(EncryptError::Cipher)?;
@@ -145,7 +145,7 @@ pub fn decrypt(data: &[u8], password: &[u8]) -> Result<Vec<u8>, DecryptError> {
     let cipher = ChaCha20Poly1305::new(key);
     let nonce = Nonce::from_slice(&decoded.nonce);
 
-    info!("Decrypting");
+    trace!("Decrypting");
     let text = cipher
         .decrypt(nonce, decoded.data.as_ref())
         .map_err(DecryptError::Cipher)?;
